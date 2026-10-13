@@ -4,7 +4,7 @@ from datetime import date
 from tkinter import messagebox, ttk
 from studytrack.database import get_all_tasks
 
-from studytrack.services import create_task, edit_task
+from studytrack.services import create_task, edit_task, remove_task
 
 class StudyTrackApp(tk.Tk):
     def __init__(self):
@@ -58,6 +58,13 @@ class StudyTrackApp(tk.Tk):
             command=self.open_edit_task_dialog,
         )
         edit_button.pack(side=tk.LEFT, padx=(8, 0))
+
+        delete_button = ttk.Button(
+            toolbar,
+            text="Изтрий",
+            command=self.delete_selected_task,
+        )
+        delete_button.pack(side=tk.LEFT, padx=(8, 0))
 
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
@@ -172,6 +179,51 @@ class StudyTrackApp(tk.Tk):
         self.refresh_tasks()
         self.task_table.selection_set(str(task_id))
         self.task_table.see(str(task_id))
+
+    def delete_selected_task(self):
+        selection = self.task_table.selection()
+
+        if not selection:
+            messagebox.showinfo(
+                "Избор на задача",
+                "Избери задача от списъка.",
+                parent=self,
+            )
+            return
+
+        task_id = int(selection[0])
+        values = self.task_table.item(selection[0], "values")
+        title = values[0]
+
+        confirmed = messagebox.askyesno(
+            "Изтриване на задача",
+            f'Да изтрия ли задачата „{title}“?',
+            parent=self,
+            default=messagebox.NO,
+        )
+
+        if not confirmed:
+            return
+
+        try:
+            remove_task(task_id)
+        except ValueError as error:
+            messagebox.showerror(
+                "Изтриване на задача",
+                str(error),
+                parent=self,
+            )
+            self.refresh_tasks()
+            return
+        except sqlite3.Error:
+            messagebox.showerror(
+                "Грешка",
+                "Задачата не може да бъде изтрита. Опитай отново.",
+                parent=self,
+            )
+            return
+
+        self.refresh_tasks()
 
 class AddTaskDialog(tk.Toplevel):
     def __init__(self, parent, on_save, initial_values=None):

@@ -87,3 +87,18 @@ def update_task(
 
             if cursor.rowcount == 0:
                 raise ValueError("Задачата вече не съществува.")
+
+def delete_task(
+    task_id: int,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> None:
+    """Изтрива само задачата с посочения идентификатор."""
+    with closing(sqlite3.connect(db_path)) as connection:
+        with connection:
+            cursor = connection.execute(
+                "DELETE FROM tasks WHERE id = ?",
+                (task_id,),
+            )
+
+            if cursor.rowcount == 0:
+                raise ValueError("Задачата вече не съществува.")
