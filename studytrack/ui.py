@@ -1,12 +1,10 @@
 import tkinter as tk
 import sqlite3
 from datetime import date
-from tkinter import ttk
-
+from tkinter import messagebox, ttk
 from studytrack.database import get_all_tasks
 
-from studytrack.services import create_task
-
+from studytrack.services import create_task, edit_task
 
 class StudyTrackApp(tk.Tk):
     def __init__(self):
@@ -53,6 +51,13 @@ class StudyTrackApp(tk.Tk):
             command=self.open_add_task_dialog,
         )
         add_button.pack(side=tk.LEFT, padx=(8, 0))
+
+        edit_button = ttk.Button(
+            toolbar,
+            text="Редактирай",
+            command=self.open_edit_task_dialog,
+        )
+        edit_button.pack(side=tk.LEFT, padx=(8, 0))
 
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
@@ -130,21 +135,63 @@ class StudyTrackApp(tk.Tk):
     def open_add_task_dialog(self):
         AddTaskDialog(self, on_save=self.save_new_task)
 
+    def open_edit_task_dialog(self):
+        selection = self.task_table.selection()
 
+        if not selection:
+            messagebox.showinfo(
+                "Избор на задача",
+                "Избери задача от списъка.",
+                parent=self,
+            )
+            return
+
+        task_id = int(selection[0])
+        values = self.task_table.item(selection[0], "values")
+
+        AddTaskDialog(
+            self,
+            on_save=lambda title, subject, due_date: self.save_edited_task(
+                task_id, title, subject, due_date
+            ),
+            initial_values={
+                "title": values[0],
+                "subject": values[1],
+                "due_date": values[2],
+            },
+        )
+
+    def save_edited_task(
+        self,
+        task_id: int,
+        title: str,
+        subject: str,
+        due_date: str,
+    ) -> None:
+        edit_task(task_id, title, subject, due_date)
+        self.refresh_tasks()
+        self.task_table.selection_set(str(task_id))
+        self.task_table.see(str(task_id))
 
 class AddTaskDialog(tk.Toplevel):
-    def __init__(self, parent, on_save):
+    def __init__(self, parent, on_save, initial_values=None):
         super().__init__(parent)
 
         self.on_save = on_save
+        self.is_editing = initial_values is not None
+        values = initial_values or {}
 
-        self.title("Добавяне на учебна задача")
+        self.title(
+            "Редактиране на учебна задача"
+            if self.is_editing
+            else "Добавяне на учебна задача"
+        )
         self.resizable(False, False)
         self.transient(parent)
 
-        self.title_var = tk.StringVar()
-        self.subject_var = tk.StringVar()
-        self.due_date_var = tk.StringVar()
+        self.title_var = tk.StringVar(value=values.get("title", ""))
+        self.subject_var = tk.StringVar(value=values.get("subject", ""))
+        self.due_date_var = tk.StringVar(value=values.get("due_date", ""))
         self.error_var = tk.StringVar()
 
         self.create_widgets()
@@ -229,7 +276,7 @@ class AddTaskDialog(tk.Toplevel):
 
         ttk.Button(
             buttons,
-            text="Добави",
+            text="Запази" if self.is_editing else "Добави",
             command=self.submit,
         ).pack(side=tk.LEFT)
 

@@ -3,7 +3,7 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from studytrack.database import DEFAULT_DB_PATH, insert_task
+from studytrack.database import DEFAULT_DB_PATH, insert_task, update_task
 
 
 def validate_task(title: str, subject: str, due_date: str) -> dict:
@@ -45,6 +45,24 @@ def create_task(
     task = validate_task(title, subject, due_date)
 
     return insert_task(
+        title=task["title"],
+        subject=task["subject"],
+        due_date=task["due_date"],
+        db_path=db_path,
+    )
+
+def edit_task(
+    task_id: int,
+    title: str,
+    subject: str,
+    due_date: str,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> None:
+    """Валидира новите стойности и актуализира избраната задача."""
+    task = validate_task(title, subject, due_date)
+
+    update_task(
+        task_id=task_id,
         title=task["title"],
         subject=task["subject"],
         due_date=task["due_date"],
