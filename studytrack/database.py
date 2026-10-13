@@ -46,3 +46,21 @@ def get_all_tasks(db_path: Path = DEFAULT_DB_PATH) -> list[dict]:
         ).fetchall()
 
         return [dict(row) for row in rows]
+
+def insert_task(
+    title: str,
+    subject: str,
+    due_date: str,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> int:
+    """Записва задача и връща нейния идентификатор."""
+    with closing(sqlite3.connect(db_path)) as connection:
+        with connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO tasks (title, subject, due_date)
+                VALUES (?, ?, ?)
+                """,
+                (title, subject, due_date),
+            )
+            return cursor.lastrowid

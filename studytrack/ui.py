@@ -4,6 +4,8 @@ from tkinter import ttk
 
 from studytrack.database import get_all_tasks
 
+from studytrack.services import create_task
+
 
 class StudyTrackApp(tk.Tk):
     def __init__(self):
@@ -110,3 +112,9 @@ class StudyTrackApp(tk.Tk):
             self.summary_label.config(text=f"Общо задачи: {len(tasks)}")
         else:
             self.summary_label.config(text="Няма добавени задачи")
+
+    def save_new_task(self, title: str, subject: str, due_date: str) -> int:
+        """Записва нова задача и обновява таблицата след успех."""
+        task_id = create_task(title, subject, due_date)
+        self.refresh_tasks()
+        return task_id
