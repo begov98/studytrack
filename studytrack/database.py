@@ -10,16 +10,32 @@ DEFAULT_DB_PATH = PROJECT_ROOT / "data" / "studytrack.db"
 
 
 def initialize_database(db_path: Path = DEFAULT_DB_PATH) -> None:
-    """Създава базата и таблицата, без да изтрива съществуващи данни."""
+    """Създава или обновява таблицата, като запазва задачите."""
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     with closing(sqlite3.connect(db_path)) as connection:
         with connection:
+            connection.execute("BEGIN IMMEDIATE")
+
+            existing_table = connection.execute(
+                """
+                SELECT sql
+                FROM sqlite_master
+                WHERE type = 'table' AND name = 'tasks'
+                """
+            ).fetchone()
+
+            if (
+                existing_table is not None
+                and "AUTOINCREMENT" in existing_table[0].upper()
+            ):
+                return
+
             connection.execute(
                 """
-                CREATE TABLE IF NOT EXISTS tasks (
-                    id INTEGER PRIMARY KEY,
+                CREATE TABLE tasks_migrated (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT NOT NULL
                         CHECK (length(trim(title)) > 0),
                     subject TEXT NOT NULL
@@ -29,6 +45,22 @@ def initialize_database(db_path: Path = DEFAULT_DB_PATH) -> None:
                         CHECK (is_completed IN (0, 1))
                 )
                 """
+            )
+
+            if existing_table is not None:
+                connection.execute(
+                    """
+                    INSERT INTO tasks_migrated (
+                        id, title, subject, due_date, is_completed
+                    )
+                    SELECT id, title, subject, due_date, is_completed
+                    FROM tasks
+                    """
+                )
+                connection.execute("DROP TABLE tasks")
+
+            connection.execute(
+                "ALTER TABLE tasks_migrated RENAME TO tasks"
             )
 
 
