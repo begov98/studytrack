@@ -10,6 +10,7 @@ from studytrack.services import (
     edit_task,
     filter_tasks,
     remove_task,
+    sort_tasks_by_deadline,
 )
 
 class StudyTrackApp(tk.Tk):
@@ -120,6 +121,31 @@ class StudyTrackApp(tk.Tk):
             lambda event: self.refresh_tasks(),
         )
 
+        sorting_frame = ttk.Frame(container)
+        sorting_frame.pack(fill=tk.X, pady=(0, 12))
+
+        ttk.Label(
+            sorting_frame,
+            text="Подреждане по срок:",
+        ).pack(side=tk.LEFT)
+
+        self.sort_order = ttk.Combobox(
+            sorting_frame,
+            state="readonly",
+            values=[
+                "Най-ранен първо",
+                "Най-късен първо",
+            ],
+            width=22,
+        )
+        self.sort_order.current(0)
+        self.sort_order.pack(side=tk.LEFT, padx=(6, 0))
+        self.sort_order.bind(
+            "<<ComboboxSelected>>",
+            lambda event: self.refresh_tasks(),
+        )
+
+
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -192,6 +218,11 @@ class StudyTrackApp(tk.Tk):
             all_tasks,
             subject=selected_subject,
             is_completed=selected_status,
+        )
+
+        tasks = sort_tasks_by_deadline(
+            tasks,
+            descending=self.sort_order.current() == 1,
         )
 
         for item in self.task_table.get_children():

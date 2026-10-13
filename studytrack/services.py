@@ -1,7 +1,7 @@
 """Бизнес логика и валидация на учебните задачи."""
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from studytrack.database import (
     DEFAULT_DB_PATH,
@@ -104,3 +104,14 @@ def filter_tasks(
             or task["is_completed"] == is_completed
         )
     ]
+
+def sort_tasks_by_deadline(
+    tasks: list[dict],
+    descending: bool = False,
+) -> list[dict]:
+    """Връща нов списък, подреден по календарен краен срок."""
+    return sorted(
+        tasks,
+        key=lambda task: date.fromisoformat(task["due_date"]),
+        reverse=descending,
+    )
