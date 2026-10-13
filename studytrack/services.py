@@ -88,3 +88,19 @@ def change_task_status(
 ) -> None:
     """Превключва задача между завършена и незавършена."""
     toggle_task_status(task_id, db_path)
+
+def filter_tasks(
+    tasks: list[dict],
+    subject: str | None = None,
+    is_completed: bool | None = None,
+) -> list[dict]:
+    """Връща задачите, които отговарят и на двата филтъра."""
+    return [
+        task
+        for task in tasks
+        if (subject is None or task["subject"] == subject)
+        and (
+            is_completed is None
+            or task["is_completed"] == is_completed
+        )
+    ]
