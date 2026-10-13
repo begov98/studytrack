@@ -9,6 +9,7 @@ from studytrack.services import (
     create_task,
     edit_task,
     filter_tasks,
+    is_task_overdue,
     remove_task,
     sort_tasks_by_deadline,
 )
@@ -149,7 +150,7 @@ class StudyTrackApp(tk.Tk):
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
 
-        columns = ("title", "subject", "due_date", "status")
+        columns = ("title", "subject", "due_date", "status", "overdue")
 
         self.task_table = ttk.Treeview(
             table_frame,
@@ -167,6 +168,14 @@ class StudyTrackApp(tk.Tk):
         self.task_table.column("subject", width=200, minwidth=100)
         self.task_table.column("due_date", width=120, minwidth=100)
         self.task_table.column("status", width=130, minwidth=100)
+
+        self.task_table.heading("overdue", text="Просрочване")
+        self.task_table.column("overdue", width=120, minwidth=100)
+
+        self.task_table.tag_configure(
+            "overdue",
+            foreground="#a00000",
+        )
 
         scrollbar = ttk.Scrollbar(
             table_frame,
@@ -228,6 +237,8 @@ class StudyTrackApp(tk.Tk):
         for item in self.task_table.get_children():
             self.task_table.delete(item)
 
+        today = date.today()
+
         for task in tasks:
             formatted_date = date.fromisoformat(
                 task["due_date"]
@@ -236,6 +247,7 @@ class StudyTrackApp(tk.Tk):
             status = (
                 "Завършена" if task["is_completed"] else "Незавършена"
             )
+            overdue = is_task_overdue(task, today=today)
 
             self.task_table.insert(
                 "",
@@ -246,7 +258,9 @@ class StudyTrackApp(tk.Tk):
                     task["subject"],
                     formatted_date,
                     status,
+                    "Просрочена" if overdue else "",
                 ),
+                tags=("overdue",) if overdue else (),
             )
 
         filters_active = (
