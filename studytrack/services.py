@@ -3,7 +3,12 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from studytrack.database import DEFAULT_DB_PATH, insert_task, update_task
+from studytrack.database import (
+    DEFAULT_DB_PATH,
+    delete_task,
+    insert_task,
+    update_task,
+)
 
 
 def validate_task(title: str, subject: str, due_date: str) -> dict:
@@ -68,3 +73,10 @@ def edit_task(
         due_date=task["due_date"],
         db_path=db_path,
     )
+
+def remove_task(
+    task_id: int,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> None:
+    """Изтрива избраната задача."""
+    delete_task(task_id, db_path)
