@@ -8,6 +8,7 @@ from studytrack.services import (
     change_task_status,
     create_task,
     edit_task,
+    filter_tasks,
     remove_task,
 )
 
@@ -78,6 +79,47 @@ class StudyTrackApp(tk.Tk):
         )
         status_button.pack(side=tk.LEFT, padx=(8, 0))
 
+        filters_frame = ttk.Frame(container)
+        filters_frame.pack(fill=tk.X, pady=(0, 12))
+
+        ttk.Label(
+            filters_frame,
+            text="Предмет:",
+        ).pack(side=tk.LEFT)
+
+        self.subject_options = []
+
+        self.subject_filter = ttk.Combobox(
+            filters_frame,
+            state="readonly",
+            values=["Всички предмети"],
+            width=25,
+        )
+        self.subject_filter.current(0)
+        self.subject_filter.pack(side=tk.LEFT, padx=(6, 16))
+        self.subject_filter.bind(
+            "<<ComboboxSelected>>",
+            lambda event: self.refresh_tasks(),
+        )
+
+        ttk.Label(
+            filters_frame,
+            text="Статус:",
+        ).pack(side=tk.LEFT)
+
+        self.status_filter = ttk.Combobox(
+            filters_frame,
+            state="readonly",
+            values=["Всички", "Завършени", "Незавършени"],
+            width=18,
+        )
+        self.status_filter.current(0)
+        self.status_filter.pack(side=tk.LEFT, padx=(6, 0))
+        self.status_filter.bind(
+            "<<ComboboxSelected>>",
+            lambda event: self.refresh_tasks(),
+        )
+
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -114,7 +156,43 @@ class StudyTrackApp(tk.Tk):
         self.summary_label.pack(anchor=tk.W, pady=(12, 0))
 
     def refresh_tasks(self):
-        tasks = get_all_tasks()
+        all_tasks = get_all_tasks()
+
+        selected_index = self.subject_filter.current()
+        selected_subject = None
+
+        if 0 < selected_index <= len(self.subject_options):
+            selected_subject = self.subject_options[selected_index - 1]
+
+        self.subject_options = sorted(
+            {task["subject"] for task in all_tasks},
+            key=str.casefold,
+        )
+
+        self.subject_filter.configure(
+            values=["Всички предмети"] + self.subject_options
+        )
+
+        if selected_subject in self.subject_options:
+            self.subject_filter.current(
+                self.subject_options.index(selected_subject) + 1
+            )
+        else:
+            self.subject_filter.current(0)
+            selected_subject = None
+
+        status_index = self.status_filter.current()
+        selected_status = {
+            0: None,
+            1: True,
+            2: False,
+        }.get(status_index)
+
+        tasks = filter_tasks(
+            all_tasks,
+            subject=selected_subject,
+            is_completed=selected_status,
+        )
 
         for item in self.task_table.get_children():
             self.task_table.delete(item)
@@ -140,10 +218,23 @@ class StudyTrackApp(tk.Tk):
                 ),
             )
 
-        if tasks:
-            self.summary_label.config(text=f"Общо задачи: {len(tasks)}")
+        filters_active = (
+            selected_subject is not None
+            or selected_status is not None
+        )
+
+        if not tasks:
+            message = (
+                "Няма задачи по избраните критерии"
+                if filters_active
+                else "Няма добавени задачи"
+            )
         else:
-            self.summary_label.config(text="Няма добавени задачи")
+            message = (
+                f"Показани задачи: {len(tasks)} от {len(all_tasks)}"
+            )
+
+        self.summary_label.config(text=message)
 
     def save_new_task(self, title: str, subject: str, due_date: str) -> int:
         """Записва нова задача и обновява таблицата след успех."""
@@ -189,8 +280,10 @@ class StudyTrackApp(tk.Tk):
     ) -> None:
         edit_task(task_id, title, subject, due_date)
         self.refresh_tasks()
-        self.task_table.selection_set(str(task_id))
-        self.task_table.see(str(task_id))
+
+        if self.task_table.exists(str(task_id)):
+            self.task_table.selection_set(str(task_id))
+            self.task_table.see(str(task_id))
 
     def delete_selected_task(self):
         selection = self.task_table.selection()
