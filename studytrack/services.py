@@ -115,3 +115,16 @@ def sort_tasks_by_deadline(
         key=lambda task: date.fromisoformat(task["due_date"]),
         reverse=descending,
     )
+
+def is_task_overdue(
+    task: dict,
+    today: date | None = None,
+) -> bool:
+    """Проверява дали задачата е незавършена и със срок преди днес."""
+    if today is None:
+        today = date.today()
+
+    return (
+        not task["is_completed"]
+        and date.fromisoformat(task["due_date"]) < today
+    )
