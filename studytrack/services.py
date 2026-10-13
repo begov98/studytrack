@@ -7,6 +7,7 @@ from studytrack.database import (
     DEFAULT_DB_PATH,
     delete_task,
     insert_task,
+    toggle_task_status,
     update_task,
 )
 
@@ -80,3 +81,10 @@ def remove_task(
 ) -> None:
     """Изтрива избраната задача."""
     delete_task(task_id, db_path)
+
+def change_task_status(
+    task_id: int,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> None:
+    """Превключва задача между завършена и незавършена."""
+    toggle_task_status(task_id, db_path)

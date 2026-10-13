@@ -102,3 +102,23 @@ def delete_task(
 
             if cursor.rowcount == 0:
                 raise ValueError("Задачата вече не съществува.")
+
+
+def toggle_task_status(
+    task_id: int,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> None:
+    """Превключва статуса на избраната задача."""
+    with closing(sqlite3.connect(db_path)) as connection:
+        with connection:
+            cursor = connection.execute(
+                """
+                UPDATE tasks
+                SET is_completed = 1 - is_completed
+                WHERE id = ?
+                """,
+                (task_id,),
+            )
+
+            if cursor.rowcount == 0:
+                raise ValueError("Задачата вече не съществува.")
