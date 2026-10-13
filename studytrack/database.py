@@ -64,3 +64,26 @@ def insert_task(
                 (title, subject, due_date),
             )
             return cursor.lastrowid
+
+
+def update_task(
+    task_id: int,
+    title: str,
+    subject: str,
+    due_date: str,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> None:
+    """Актуализира данните на задача, без да променя статуса ѝ."""
+    with closing(sqlite3.connect(db_path)) as connection:
+        with connection:
+            cursor = connection.execute(
+                """
+                UPDATE tasks
+                SET title = ?, subject = ?, due_date = ?
+                WHERE id = ?
+                """,
+                (title, subject, due_date, task_id),
+            )
+
+            if cursor.rowcount == 0:
+                raise ValueError("Задачата вече не съществува.")
