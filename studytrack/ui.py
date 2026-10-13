@@ -1,4 +1,5 @@
 import tkinter as tk
+import sqlite3
 from datetime import date
 from tkinter import ttk
 
@@ -45,6 +46,13 @@ class StudyTrackApp(tk.Tk):
             command=self.refresh_tasks,
         )
         refresh_button.pack(side=tk.LEFT)
+
+        add_button = ttk.Button(
+            toolbar,
+            text="Добави задача",
+            command=self.open_add_task_dialog,
+        )
+        add_button.pack(side=tk.LEFT, padx=(8, 0))
 
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
@@ -118,3 +126,131 @@ class StudyTrackApp(tk.Tk):
         task_id = create_task(title, subject, due_date)
         self.refresh_tasks()
         return task_id
+
+    def open_add_task_dialog(self):
+        AddTaskDialog(self, on_save=self.save_new_task)
+
+
+
+class AddTaskDialog(tk.Toplevel):
+    def __init__(self, parent, on_save):
+        super().__init__(parent)
+
+        self.on_save = on_save
+
+        self.title("Добавяне на учебна задача")
+        self.resizable(False, False)
+        self.transient(parent)
+
+        self.title_var = tk.StringVar()
+        self.subject_var = tk.StringVar()
+        self.due_date_var = tk.StringVar()
+        self.error_var = tk.StringVar()
+
+        self.create_widgets()
+
+        self.bind("<Return>", self.submit)
+        self.bind("<Escape>", lambda event: self.destroy())
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
+
+        self.wait_visibility()
+        self.grab_set()
+        self.title_entry.focus_set()
+
+    def create_widgets(self):
+        container = ttk.Frame(self, padding=20)
+        container.pack(fill=tk.BOTH, expand=True)
+        container.columnconfigure(1, weight=1)
+
+        ttk.Label(
+            container,
+            text="Заглавие:",
+        ).grid(row=0, column=0, sticky=tk.W, padx=(0, 12), pady=6)
+
+        self.title_entry = ttk.Entry(
+            container,
+            textvariable=self.title_var,
+            width=40,
+        )
+        self.title_entry.grid(
+            row=0, column=1, sticky=tk.EW, pady=6
+        )
+
+        ttk.Label(
+            container,
+            text="Предмет:",
+        ).grid(row=1, column=0, sticky=tk.W, padx=(0, 12), pady=6)
+
+        ttk.Entry(
+            container,
+            textvariable=self.subject_var,
+            width=40,
+        ).grid(row=1, column=1, sticky=tk.EW, pady=6)
+
+        ttk.Label(
+            container,
+            text="Краен срок:",
+        ).grid(row=2, column=0, sticky=tk.W, padx=(0, 12), pady=6)
+
+        ttk.Entry(
+            container,
+            textvariable=self.due_date_var,
+            width=40,
+        ).grid(row=2, column=1, sticky=tk.EW, pady=6)
+
+        ttk.Label(
+            container,
+            text="Формат: ДД.ММ.ГГГГ, например 15.10.2026",
+        ).grid(row=3, column=1, sticky=tk.W, pady=(0, 8))
+
+        ttk.Label(
+            container,
+            textvariable=self.error_var,
+            foreground="#b00020",
+            wraplength=380,
+        ).grid(
+            row=4,
+            column=0,
+            columnspan=2,
+            sticky=tk.W,
+            pady=(4, 12),
+        )
+
+        buttons = ttk.Frame(container)
+        buttons.grid(
+            row=5, column=0, columnspan=2, sticky=tk.E
+        )
+
+        ttk.Button(
+            buttons,
+            text="Отказ",
+            command=self.destroy,
+        ).pack(side=tk.LEFT, padx=(0, 8))
+
+        ttk.Button(
+            buttons,
+            text="Добави",
+            command=self.submit,
+        ).pack(side=tk.LEFT)
+
+    def submit(self, event=None):
+        self.error_var.set("")
+
+        try:
+            self.on_save(
+                self.title_var.get(),
+                self.subject_var.get(),
+                self.due_date_var.get(),
+            )
+        except ValueError as error:
+            self.error_var.set(str(error))
+            return
+        except sqlite3.Error:
+            self.error_var.set(
+                "Възникна грешка при работа с базата данни. "
+                "Затвори формата и обнови списъка, "
+                "за да провериш дали задачата е записана."
+            )
+            return
+
+        self.destroy()
