@@ -30,3 +30,19 @@ def initialize_database(db_path: Path = DEFAULT_DB_PATH) -> None:
                 )
                 """
             )
+
+
+def get_all_tasks(db_path: Path = DEFAULT_DB_PATH) -> list[dict]:
+    """Връща всички задачи, подредени по идентификатор."""
+    with closing(sqlite3.connect(db_path)) as connection:
+        connection.row_factory = sqlite3.Row
+
+        rows = connection.execute(
+            """
+            SELECT id, title, subject, due_date, is_completed
+            FROM tasks
+            ORDER BY id
+            """
+        ).fetchall()
+
+        return [dict(row) for row in rows]
