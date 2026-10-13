@@ -435,7 +435,7 @@ class AddTaskDialog(tk.Toplevel):
 
         self.create_widgets()
 
-        self.bind("<Return>", self.submit)
+        self.bind("<Return>", self.handle_enter)
         self.bind("<Escape>", lambda event: self.destroy())
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 
@@ -507,17 +507,27 @@ class AddTaskDialog(tk.Toplevel):
             row=5, column=0, columnspan=2, sticky=tk.E
         )
 
-        ttk.Button(
+        self.cancel_button = ttk.Button(
             buttons,
             text="Отказ",
             command=self.destroy,
-        ).pack(side=tk.LEFT, padx=(0, 8))
+        )
+        self.cancel_button.pack(side=tk.LEFT, padx=(0, 8))
 
         ttk.Button(
             buttons,
             text="Запази" if self.is_editing else "Добави",
             command=self.submit,
         ).pack(side=tk.LEFT)
+
+    def handle_enter(self, event=None):
+        if self.focus_get() == self.cancel_button:
+            self.destroy()
+        else:
+            self.submit()
+
+        return "break"
+
 
     def submit(self, event=None):
         self.error_var.set("")
