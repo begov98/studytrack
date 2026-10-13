@@ -4,7 +4,12 @@ from datetime import date
 from tkinter import messagebox, ttk
 from studytrack.database import get_all_tasks
 
-from studytrack.services import create_task, edit_task, remove_task
+from studytrack.services import (
+    change_task_status,
+    create_task,
+    edit_task,
+    remove_task,
+)
 
 class StudyTrackApp(tk.Tk):
     def __init__(self):
@@ -65,6 +70,13 @@ class StudyTrackApp(tk.Tk):
             command=self.delete_selected_task,
         )
         delete_button.pack(side=tk.LEFT, padx=(8, 0))
+
+        status_button = ttk.Button(
+            toolbar,
+            text="Промени статус",
+            command=self.change_selected_task_status,
+        )
+        status_button.pack(side=tk.LEFT, padx=(8, 0))
 
         table_frame = ttk.Frame(container)
         table_frame.pack(fill=tk.BOTH, expand=True)
@@ -224,6 +236,43 @@ class StudyTrackApp(tk.Tk):
             return
 
         self.refresh_tasks()
+
+    def change_selected_task_status(self):
+        selection = self.task_table.selection()
+
+        if not selection:
+            messagebox.showinfo(
+                "Избор на задача",
+                "Избери задача от списъка.",
+                parent=self,
+            )
+            return
+
+        task_id = int(selection[0])
+
+        try:
+            change_task_status(task_id)
+        except ValueError as error:
+            messagebox.showerror(
+                "Промяна на статус",
+                str(error),
+                parent=self,
+            )
+            self.refresh_tasks()
+            return
+        except sqlite3.Error:
+            messagebox.showerror(
+                "Грешка",
+                "Статусът не може да бъде променен. Опитай отново.",
+                parent=self,
+            )
+            return
+
+        self.refresh_tasks()
+
+        if self.task_table.exists(str(task_id)):
+            self.task_table.selection_set(str(task_id))
+            self.task_table.see(str(task_id))
 
 class AddTaskDialog(tk.Toplevel):
     def __init__(self, parent, on_save, initial_values=None):
