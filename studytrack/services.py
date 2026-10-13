@@ -2,6 +2,8 @@
 
 import re
 from datetime import datetime
+from pathlib import Path
+from studytrack.database import DEFAULT_DB_PATH, insert_task
 
 
 def validate_task(title: str, subject: str, due_date: str) -> dict:
@@ -32,3 +34,19 @@ def validate_task(title: str, subject: str, due_date: str) -> dict:
         "subject": subject,
         "due_date": parsed_date.isoformat(),
     }
+
+def create_task(
+    title: str,
+    subject: str,
+    due_date: str,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> int:
+    """Валидира данните и записва задачата само ако са коректни."""
+    task = validate_task(title, subject, due_date)
+
+    return insert_task(
+        title=task["title"],
+        subject=task["subject"],
+        due_date=task["due_date"],
+        db_path=db_path,
+    )
